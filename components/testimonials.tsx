@@ -6,32 +6,32 @@ const testimonials = [
     title: "CV et lettre de motivation exceptionnels !",
     quote:
       "Grâce à DIGITAL Form Art, j'ai obtenu un CV et une lettre de motivation parfaitement structurés qui mettent en valeur mon parcours. J'ai reçu plusieurs entretiens dans les semaines qui ont suivi.",
-    author: "Sophie Martin",
-    location: "Paris, France",
+    author: "Aminata Kouassi",
+    location: "Abidjan, Côte d'Ivoire",
     image: "/images/imgi_108_user88.webp",
   },
   {
     title: "Accompagnement personnalisé remarquable !",
     quote:
       "L'équipe de DIGITAL Form Art m'a accompagné avec professionnalisme dans ma recherche d'emploi. Leur suivi personnalisé et leurs conseils m'ont permis de décrocher le poste de mes rêves.",
-    author: "Thomas Dubois",
-    location: "Lyon, France",
+    author: "Kouamé Traoré",
+    location: "Yamoussoukro, Côte d'Ivoire",
     image: "/images/imgi_113_user93.webp",
   },
   {
     title: "Valorisation de profil réussie !",
     quote:
       "Mon profil professionnel a été complètement transformé. Les experts de DIGITAL Form Art ont su mettre en avant mes compétences de manière optimale. Je recommande vivement leurs services.",
-    author: "Marie Leclerc",
-    location: "Marseille, France",
+    author: "Fatou Diallo",
+    location: "Bouaké, Côte d'Ivoire",
     image: "/images/imgi_109_user89.webp",
   },
   {
     title: "Service d'assistance au top !",
     quote:
       "L'accompagnement de DIGITAL Form Art est exceptionnel. Leur équipe est toujours disponible pour répondre à mes questions et m'aider à optimiser mes candidatures. Un service de qualité !",
-    author: "Julien Bernard",
-    location: "Toulouse, France",
+    author: "Jean-Baptiste Koné",
+    location: "San-Pédro, Côte d'Ivoire",
     image: "/images/imgi_107_user87.webp",
   },
 ]

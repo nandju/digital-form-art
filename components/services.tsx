@@ -7,7 +7,7 @@ const services = [
     title: "CV & Lettre de motivation",
     description:
       "Valorisation de votre profil professionnel avec des CV et lettres de motivation optimisés, structurés et adaptés à vos candidatures.",
-    href: "/services/cv-lettre",
+    href: "/login",
   },
   {
     icon: Briefcase,

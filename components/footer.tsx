@@ -73,24 +73,24 @@ export default function Footer() {
             <h4 className="text-sm font-semibold text-foreground mb-4">NOTRE ADRESSE</h4>
             <div className="flex items-start gap-3 mb-6">
               <MapPin className="h-4 w-4 text-foreground/60 mt-0.5" />
-              <p className="text-sm text-foreground/60">France</p>
+              <p className="text-sm text-foreground/60">Abidjan, Côte d'Ivoire</p>
             </div>
 
             <h4 className="text-sm font-semibold text-foreground mb-4">CONTACTEZ-NOUS</h4>
             <div className="space-y-3">
               <div className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-foreground/60" />
-                <a href="tel:+33123456789" className="text-sm text-foreground/60 hover:text-accent transition-colors">
-                  +33 1 23 45 67 89
+                <a href="tel:+2250708091011" className="text-sm text-foreground/60 hover:text-accent transition-colors">
+                  +225 07 08 09 10 11
                 </a>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-foreground/60" />
                 <a
-                  href="mailto:contact@digitalformart.com"
+                  href="mailto:contact@digitalformart.ci"
                   className="text-sm text-foreground/60 hover:text-accent transition-colors"
                 >
-                  contact@digitalformart.com
+                  contact@digitalformart.ci
                 </a>
               </div>
             </div>
