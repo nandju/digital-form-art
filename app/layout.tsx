@@ -14,7 +14,12 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "DIGITAL Form Art - Accompagnement professionnel",
   description: "Valorisez votre parcours de carrière avec des CV et lettres de motivation professionnels. Accompagnement personnalisé pour votre réussite professionnelle.",
-  generator: 'v0.app'
+  generator: 'v0.app',
+  icons: {
+    icon: '/images/logo_sans_fond.png',
+    shortcut: '/images/logo_sans_fond.png',
+    apple: '/images/logo_sans_fond.png',
+  },
 }
 
 export default function RootLayout({
