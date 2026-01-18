@@ -5,19 +5,38 @@ import type React from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { Menu, X, ArrowUpRight } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Menu, X, ArrowUpRight, User } from "lucide-react"
 
 export default function Header() {
+  const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 50)
     }
 
+    // Vérifier l'authentification
+    const checkAuth = () => {
+      const auth = localStorage.getItem("isAuthenticated")
+      setIsAuthenticated(auth === "true")
+    }
+
+    checkAuth()
     window.addEventListener("scroll", handleScroll)
-    return () => window.removeEventListener("scroll", handleScroll)
+    // Vérifier l'auth à chaque changement de localStorage
+    window.addEventListener("storage", checkAuth)
+    // Vérifier toutes les secondes pour les changements dans le même onglet
+    const interval = setInterval(checkAuth, 1000)
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll)
+      window.removeEventListener("storage", checkAuth)
+      clearInterval(interval)
+    }
   }, [])
 
   const navItems = [
@@ -75,15 +94,34 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* CTA Button */}
-          <a
-            href="#contact"
-            onClick={(e) => handleNavClick(e, "#contact")}
-            className="hidden md:flex items-center gap-2 rounded-full border border-foreground px-5 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors cursor-pointer"
-          >
-            Contactez-nous
-            <ArrowUpRight className="h-4 w-4" />
-          </a>
+          {/* Desktop Actions */}
+          <div className="hidden md:flex items-center gap-4">
+            {isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+              >
+                <User className="h-4 w-4" />
+                Mon espace
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-foreground text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors"
+              >
+                <User className="h-4 w-4" />
+                Connexion
+              </Link>
+            )}
+            <a
+              href="#contact"
+              onClick={(e) => handleNavClick(e, "#contact")}
+              className="flex items-center gap-2 rounded-full border border-foreground px-5 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors cursor-pointer"
+            >
+              Contactez-nous
+              <ArrowUpRight className="h-4 w-4" />
+            </a>
+          </div>
 
           {/* Mobile Menu Button */}
           <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -105,6 +143,25 @@ export default function Header() {
                   {item.name}
                 </a>
               ))}
+              {isAuthenticated ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-medium w-fit hover:opacity-90 transition-opacity"
+                >
+                  <User className="h-4 w-4" />
+                  Mon espace
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-foreground text-sm font-medium text-foreground w-fit hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors"
+                >
+                  <User className="h-4 w-4" />
+                  Connexion
+                </Link>
+              )}
               <a
                 href="#contact"
                 onClick={(e) => handleNavClick(e, "#contact")}

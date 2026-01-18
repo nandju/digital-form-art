@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { ArrowLeft, Mail, Lock, User, Eye, EyeOff } from "lucide-react"
+import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, Phone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 export default function RegisterPage() {
@@ -14,6 +14,8 @@ export default function RegisterPage() {
     firstName: "",
     lastName: "",
     email: "",
+    phone: "",
+    whatsappPreferred: false,
     password: "",
     confirmPassword: "",
     acceptTerms: false,
@@ -168,6 +170,36 @@ export default function RegisterPage() {
                   placeholder="votre@email.com"
                 />
               </div>
+            </div>
+
+            {/* Téléphone */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-foreground mb-2">
+                Numéro de téléphone
+              </label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-foreground/40" />
+                <input
+                  id="phone"
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
+                  placeholder="+33 6 12 34 56 78"
+                />
+              </div>
+              <label className="flex items-center gap-2 mt-2">
+                <input
+                  type="checkbox"
+                  checked={formData.whatsappPreferred}
+                  onChange={(e) => setFormData({ ...formData, whatsappPreferred: e.target.checked })}
+                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
+                />
+                <span className="text-sm text-foreground/70">
+                  Je préfère être contacté via WhatsApp
+                </span>
+              </label>
             </div>
 
             {/* Mot de passe */}
