@@ -74,32 +74,32 @@ export default function Header() {
             <Image
               src="/images/logo_sans_fond.png"
               alt="DIGITAL Form Art"
-              width={scrolled ? 50 : 60}
-              height={scrolled ? 50 : 60}
+              width={scrolled ? 70 : 80}
+              height={scrolled ? 70 : 80}
               className="object-contain"
             />
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center gap-8">
+          {/* Desktop Navigation - visible à partir de lg (tablette et desktop) */}
+          <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
             {navItems.map((item) => (
               <a
                 key={item.name}
                 href={item.href}
                 onClick={(e) => handleNavClick(e, item.href)}
-                className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors cursor-pointer"
+                className="text-sm font-medium text-foreground/70 hover:text-accent transition-colors cursor-pointer whitespace-nowrap"
               >
                 {item.name}
               </a>
             ))}
           </nav>
 
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center gap-4">
+          {/* Desktop Actions - visible à partir de lg (tablette et desktop) */}
+          <div className="hidden lg:flex items-center gap-3 xl:gap-4">
             {isAuthenticated ? (
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity"
+                className="flex items-center gap-2 px-4 xl:px-5 py-2 xl:py-2.5 rounded-full bg-accent text-accent-foreground text-sm font-medium hover:opacity-90 transition-opacity whitespace-nowrap"
               >
                 <User className="h-4 w-4" />
                 Mon espace
@@ -107,31 +107,32 @@ export default function Header() {
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-foreground text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors"
+                className="flex items-center gap-2 px-4 xl:px-5 py-2 xl:py-2.5 rounded-full border border-foreground text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors whitespace-nowrap"
               >
                 <User className="h-4 w-4" />
                 Connexion
               </Link>
             )}
             <a
-              href="#contact"
-              onClick={(e) => handleNavClick(e, "#contact")}
-              className="flex items-center gap-2 rounded-full border border-foreground px-5 py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors cursor-pointer"
+              href="https://wa.me/2250708091011"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-full border border-foreground px-4 xl:px-5 py-2 xl:py-2.5 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors cursor-pointer whitespace-nowrap"
             >
               Contactez-nous
               <ArrowUpRight className="h-4 w-4" />
             </a>
           </div>
 
-          {/* Mobile Menu Button */}
-          <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          {/* Mobile/Tablet Menu Button - visible jusqu'à lg */}
+          <button className="lg:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
 
-        {/* Mobile Menu */}
+        {/* Mobile/Tablet Menu - visible jusqu'à lg */}
         {mobileMenuOpen && (
-          <div className="md:hidden pt-4 pb-6">
+          <div className="lg:hidden pt-4 pb-6">
             <nav className="flex flex-col gap-4">
               {navItems.map((item) => (
                 <a
@@ -163,9 +164,11 @@ export default function Header() {
                 </Link>
               )}
               <a
-                href="#contact"
-                onClick={(e) => handleNavClick(e, "#contact")}
-                className="flex items-center gap-2 rounded-full border border-foreground px-5 py-2.5 text-sm font-medium text-foreground w-fit cursor-pointer"
+                href="https://wa.me/2250708091011"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 rounded-full border border-foreground px-5 py-2.5 text-sm font-medium text-foreground w-fit hover:bg-accent hover:text-accent-foreground hover:border-accent transition-colors cursor-pointer"
               >
                 Contactez-nous
                 <ArrowUpRight className="h-4 w-4" />

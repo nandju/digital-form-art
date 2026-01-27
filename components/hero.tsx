@@ -26,7 +26,7 @@ export default function Hero() {
   return (
     <section id="home" className="pt-28 pb-16">
       <div className="px-6 mx-auto max-w-7xl">
-        <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+        <div className="pt-8 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
           {/* Left Content - Title and Button */}
           <div className="lg:max-w-3xl pt-0">
             <h1 className="leading-tight text-balance text-left font-sans font-semibold leading-tight tracking-tight text-accent text-2xl sm:text-3xl md:text-4xl lg:text-5xl">

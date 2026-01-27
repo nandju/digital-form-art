@@ -27,8 +27,17 @@ import {
   EyeOff,
   Ban,
   CheckCircle2,
+  Trash2,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 // Types
 interface RequestFormData {
@@ -94,6 +103,7 @@ interface Request {
   email: string
   phone: string
   date: string
+  type: "creation" | "amelioration"
   status: "pending" | "in-progress" | "completed"
   assignedAdmin: string | null
   completedBy: string | null
@@ -128,6 +138,7 @@ const mockRequests: Request[] = [
     email: "jean.dupont@email.com",
     phone: "+33 6 12 34 56 78",
     date: "2025-02-10",
+    type: "creation",
     status: "pending",
     assignedAdmin: null,
     completedBy: null,
@@ -187,9 +198,10 @@ const mockRequests: Request[] = [
     userName: "Marie Martin",
     email: "marie.martin@email.com",
     phone: "+33 6 98 76 54 32",
-    date: "2025-02-08",
-    status: "in-progress",
-    assignedAdmin: "Admin 1",
+    date: "2025-02-12",
+    type: "amelioration",
+    status: "pending",
+    assignedAdmin: null,
     completedBy: null,
     completedAt: null,
     cvUrl: null,
@@ -228,6 +240,7 @@ const mockRequests: Request[] = [
     email: "pierre.bernard@email.com",
     phone: "+33 6 11 22 33 44",
     date: "2025-02-05",
+    type: "creation",
     status: "completed",
     assignedAdmin: "Admin 1",
     completedBy: "Admin 1",
@@ -317,6 +330,9 @@ export default function AdminPage() {
     cv: null as File | null,
     letter: null as File | null,
   })
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false)
+  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false)
+  const [userToAction, setUserToAction] = useState<RegularUser | null>(null)
 
   // Vérifier l'authentification admin
   useEffect(() => {
@@ -391,22 +407,48 @@ export default function AdminPage() {
     })
   }
 
-  const handleToggleUserBlock = (userId: string) => {
-    setUsers(
-      users.map((u) => {
-        if (u.id === userId) {
-          return { ...u, isBlocked: !u.isBlocked }
-        }
-        return u
-      }),
-    )
+  const handleBlockClick = (user: RegularUser) => {
+    setUserToAction(user)
+    setBlockDialogOpen(true)
+  }
 
-    const user = users.find((u) => u.id === userId)
-    toast({
-      title: user?.isBlocked ? "Utilisateur débloqué" : "Utilisateur bloqué",
-      description: `L'utilisateur ${user?.name} a été ${user?.isBlocked ? "débloqué" : "bloqué"}.`,
-      variant: "default",
-    })
+  const handleBlockConfirm = () => {
+    if (userToAction) {
+      const wasBlocked = userToAction.isBlocked
+      setUsers(
+        users.map((u) => {
+          if (u.id === userToAction.id) {
+            return { ...u, isBlocked: !u.isBlocked }
+          }
+          return u
+        }),
+      )
+      toast({
+        title: wasBlocked ? "Utilisateur débloqué" : "Utilisateur bloqué",
+        description: `L'utilisateur ${userToAction.name} a été ${wasBlocked ? "débloqué" : "bloqué"}.`,
+        variant: "default",
+      })
+      setBlockDialogOpen(false)
+      setUserToAction(null)
+    }
+  }
+
+  const handleDeleteUserClick = (user: RegularUser) => {
+    setUserToAction(user)
+    setDeleteUserDialogOpen(true)
+  }
+
+  const handleDeleteUserConfirm = () => {
+    if (userToAction) {
+      setUsers(users.filter((u) => u.id !== userToAction.id))
+      toast({
+        title: "Utilisateur supprimé",
+        description: `L'utilisateur ${userToAction.name} a été supprimé définitivement.`,
+        variant: "default",
+      })
+      setDeleteUserDialogOpen(false)
+      setUserToAction(null)
+    }
   }
 
   const filteredRequests = requests.filter((req) => {
@@ -941,6 +983,9 @@ export default function AdminPage() {
                         Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-foreground/60 uppercase">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-foreground/60 uppercase">
                         Statut
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-foreground/60 uppercase">
@@ -962,6 +1007,9 @@ export default function AdminPage() {
                         </td>
                         <td className="px-6 py-4 text-sm text-foreground/70">
                           {new Date(request.date).toLocaleDateString("fr-FR")}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-foreground/70">
+                          {request.type === "amelioration" ? "Amélioration de CV" : "Nouvelle demande"}
                         </td>
                         <td className="px-6 py-4">
                           <span
@@ -989,9 +1037,14 @@ export default function AdminPage() {
                               setSelectedRequest(request.id)
                               setViewMode("detail")
                             }}
-                            className="px-3 py-1 text-sm border border-border rounded-lg text-foreground hover:bg-card"
+                            className="group relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border border-border rounded-lg text-foreground hover:bg-card transition-colors min-w-[36px] sm:min-w-0"
+                            title="Voir les détails de la demande"
                           >
-                            Voir détails
+                            <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                            <span className="hidden sm:inline">Voir détails</span>
+                            <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                              Voir les détails
+                            </span>
                           </button>
                         </td>
                       </tr>
@@ -1066,16 +1119,43 @@ export default function AdminPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleToggleUserBlock(user.id)}
-                            className={`px-3 py-1 text-sm rounded-lg hover:opacity-90 ${
-                              user.isBlocked
-                                ? "bg-success/20 text-success border border-success/30"
-                                : "bg-destructive/20 text-destructive border border-destructive/30"
-                            }`}
-                          >
-                            {user.isBlocked ? "Débloquer" : "Bloquer"}
-                          </button>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              onClick={() => handleBlockClick(user)}
+                              className={`group relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg hover:opacity-90 transition-opacity min-w-[36px] sm:min-w-0 ${
+                                user.isBlocked
+                                  ? "bg-success/20 text-success border border-success/30"
+                                  : "bg-warning/20 text-warning border border-warning/30"
+                              }`}
+                              title={user.isBlocked ? "Débloquer l'utilisateur" : "Bloquer l'utilisateur"}
+                            >
+                              {user.isBlocked ? (
+                                <>
+                                  <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                  <span className="hidden sm:inline">Débloquer</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Ban className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                                  <span className="hidden sm:inline">Bloquer</span>
+                                </>
+                              )}
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                {user.isBlocked ? "Débloquer l'utilisateur" : "Bloquer l'utilisateur"}
+                              </span>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUserClick(user)}
+                              className="group relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg bg-destructive/10 text-destructive border border-destructive/30 hover:bg-destructive/20 transition-colors min-w-[36px] sm:min-w-0"
+                              title="Supprimer l'utilisateur"
+                            >
+                              <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                              <span className="hidden sm:inline">Supprimer</span>
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                                Supprimer l'utilisateur
+                              </span>
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1085,6 +1165,79 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+
+        {/* Modal de confirmation de blocage/déblocage */}
+        <Dialog open={blockDialogOpen} onOpenChange={setBlockDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {userToAction?.isBlocked ? (
+                  <>
+                    <CheckCircle2 className="h-5 w-5 text-success" />
+                    Débloquer l'utilisateur
+                  </>
+                ) : (
+                  <>
+                    <Ban className="h-5 w-5 text-warning" />
+                    Bloquer l'utilisateur
+                  </>
+                )}
+              </DialogTitle>
+              <DialogDescription className="pt-2">
+                {userToAction?.isBlocked
+                  ? `Êtes-vous sûr de vouloir débloquer ${userToAction?.name} ? L'utilisateur pourra à nouveau accéder à la plateforme.`
+                  : `Êtes-vous sûr de vouloir bloquer ${userToAction?.name} ? L'utilisateur ne pourra plus accéder à la plateforme.`}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <button
+                onClick={() => setBlockDialogOpen(false)}
+                className="w-full sm:w-auto px-4 py-2 border border-border rounded-lg text-foreground hover:bg-card transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleBlockConfirm}
+                className={`w-full sm:w-auto px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity ${
+                  userToAction?.isBlocked
+                    ? "bg-success text-success-foreground"
+                    : "bg-warning text-warning-foreground"
+                }`}
+              >
+                {userToAction?.isBlocked ? "Débloquer" : "Bloquer"}
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de confirmation de suppression d'utilisateur */}
+        <Dialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <Trash2 className="h-5 w-5" />
+                Supprimer l'utilisateur
+              </DialogTitle>
+              <DialogDescription className="pt-2">
+                Êtes-vous sûr de vouloir supprimer définitivement {userToAction?.name} ? Cette action est irréversible et toutes les données associées à cet utilisateur seront perdues.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
+              <button
+                onClick={() => setDeleteUserDialogOpen(false)}
+                className="w-full sm:w-auto px-4 py-2 border border-border rounded-lg text-foreground hover:bg-card transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleDeleteUserConfirm}
+                className="w-full sm:w-auto px-4 py-2 rounded-lg bg-destructive text-destructive-foreground hover:opacity-90 transition-opacity"
+              >
+                Supprimer définitivement
+              </button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

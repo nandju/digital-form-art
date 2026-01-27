@@ -110,6 +110,14 @@ export default function Footer() {
             <Link href="/cookies" className="text-sm text-foreground/50 hover:text-accent transition-colors">
               Politique des cookies
             </Link>
+            <a
+              href="https://chat.whatsapp.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-foreground/50 hover:text-accent transition-colors"
+            >
+              Groupe WhatsApp
+            </a>
           </div>
         </div>
       </div>
