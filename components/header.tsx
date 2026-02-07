@@ -21,13 +21,13 @@ export default function Header() {
 
     // Vérifier l'authentification
     const checkAuth = () => {
-      const auth = localStorage.getItem("isAuthenticated")
+      const auth = sessionStorage.getItem("isAuthenticated")
       setIsAuthenticated(auth === "true")
     }
 
     checkAuth()
     window.addEventListener("scroll", handleScroll)
-    // Vérifier l'auth à chaque changement de localStorage
+    // Vérifier l'auth à chaque changement de sessionStorage
     window.addEventListener("storage", checkAuth)
     // Vérifier toutes les secondes pour les changements dans le même onglet
     const interval = setInterval(checkAuth, 1000)

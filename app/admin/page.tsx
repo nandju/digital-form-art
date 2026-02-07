@@ -1,8 +1,9 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react";
+import { createClient } from "@supabase/supabase-js";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   FileText,
@@ -28,8 +29,8 @@ import {
   Ban,
   CheckCircle2,
   Trash2,
-} from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
   DialogContent,
@@ -37,97 +38,98 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
+import { supabase } from "@/lib/supabase";
 
 // Types
 interface RequestFormData {
   // Informations personnelles
-  firstName: string
-  lastName: string
-  age: string
-  email: string
-  phone: string
-  maritalStatus: string
-  photo: string | null
+  firstName: string;
+  lastName: string;
+  age: string;
+  email: string;
+  phone: string;
+  maritalStatus: string;
+  photo: string | null;
 
   // Profil professionnel
-  presentation: string
-  objective: string
-  field: string
+  presentation: string;
+  objective: string;
+  field: string;
 
   // Diplômes
   diplomas: Array<{
-    id: string
-    diploma: string
-    year: string
-    institution: string
-    specialty: string
-  }>
+    id: string;
+    diploma: string;
+    year: string;
+    institution: string;
+    specialty: string;
+  }>;
 
   // Expériences
   experiences: Array<{
-    id: string
-    position: string
-    company: string
-    startMonth: string
-    startYear: string
-    endMonth: string
-    endYear: string
-    current: boolean
-    tasks: string
-  }>
+    id: string;
+    position: string;
+    company: string;
+    startMonth: string;
+    startYear: string;
+    endMonth: string;
+    endYear: string;
+    current: boolean;
+    tasks: string;
+  }>;
 
   // Compétences
-  itSkills: string
-  software: string
-  languages: string
-  technicalSkills: string
-  organizationalSkills: string
+  itSkills: string;
+  software: string;
+  languages: string;
+  technicalSkills: string;
+  organizationalSkills: string;
 
   // Aptitudes
-  organization: boolean
-  teamwork: boolean
-  punctuality: boolean
-  rigor: boolean
-  otherQualities: string
+  organization: boolean;
+  teamwork: boolean;
+  punctuality: boolean;
+  rigor: boolean;
+  otherQualities: string;
 
   // Centres d'intérêt
-  hobbies: string
-  sports: string
-  cultural: string
+  hobbies: string;
+  sports: string;
+  cultural: string;
 }
 
 interface Request {
-  id: string
-  userName: string
-  email: string
-  phone: string
-  date: string
-  type: "creation" | "amelioration"
-  status: "pending" | "in-progress" | "completed"
-  assignedAdmin: string | null
-  completedBy: string | null
-  completedAt: string | null
-  cvUrl: string | null
-  letterUrl: string | null
-  formData: RequestFormData
+  id: string;
+  userName: string;
+  email: string;
+  phone: string;
+  date: string;
+  type: "creation" | "amelioration";
+  status: "pending" | "in-progress" | "completed";
+  assignedAdmin: string | null;
+  completedBy: string | null;
+  completedAt: string | null;
+  cvUrl: string | null;
+  letterUrl: string | null;
+  formData: RequestFormData;
 }
 
 interface AdminUser {
-  id: string
-  name: string
-  email: string
+  id: string;
+  name: string;
+  email: string;
 }
 
 interface RegularUser {
-  id: string
-  name: string
-  email: string
-  phone: string
-  whatsappPreferred: boolean
-  isBlocked: boolean
-  requestsCount: number
-  createdAt: string
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  whatsappPreferred: boolean;
+  isBlocked: boolean;
+  requestsCount: number;
+  createdAt: string;
 }
 
 // Données mockées - à remplacer par des appels API
@@ -275,101 +277,115 @@ const mockRequests: Request[] = [
       cultural: "",
     },
   },
-]
-
-const mockUsers: RegularUser[] = [
-  {
-    id: "1",
-    name: "Jean Dupont",
-    email: "jean.dupont@email.com",
-    phone: "+33 6 12 34 56 78",
-    whatsappPreferred: true,
-    isBlocked: false,
-    requestsCount: 1,
-    createdAt: "2025-01-15",
-  },
-  {
-    id: "2",
-    name: "Marie Martin",
-    email: "marie.martin@email.com",
-    phone: "+33 6 98 76 54 32",
-    whatsappPreferred: false,
-    isBlocked: false,
-    requestsCount: 2,
-    createdAt: "2025-01-20",
-  },
-  {
-    id: "3",
-    name: "Pierre Bernard",
-    email: "pierre.bernard@email.com",
-    phone: "+33 6 11 22 33 44",
-    whatsappPreferred: true,
-    isBlocked: false,
-    requestsCount: 1,
-    createdAt: "2025-01-25",
-  },
-]
+];
 
 const currentAdmin: AdminUser = {
   id: "1",
   name: "Admin 1",
   email: "admin@digitalformart.com",
-}
+};
 
 export default function AdminPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [requests, setRequests] = useState<Request[]>(mockRequests)
-  const [users, setUsers] = useState<RegularUser[]>(mockUsers)
-  const [selectedRequest, setSelectedRequest] = useState<string | null>(null)
-  const [viewMode, setViewMode] = useState<"list" | "detail">("list")
-  const [activeTab, setActiveTab] = useState<"requests" | "users">("requests")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const router = useRouter();
+  const { toast } = useToast();
+  const [requests, setRequests] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  // Récupère tous les users sans id ni password
+  async function fetchUsers() {
+    const { data, error } = await supabase
+      .from("users")
+      .select(
+        "first_name, last_name, email, phone, whatsapp_preferred, password, is_admin, created_at,id, isBlocked, isDeleted",
+      )
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      // Pour chaque user, récupère requestsCount
+      const usersWithCount = await Promise.all(
+        data.map(async (user) => {
+          const { data: requestsData, error: requestsError } = await supabase
+            .from("request")
+            .select("*").eq("owner_email", user.email);
+          return {
+            ...user,
+            requestsCount:
+              !requestsError && requestsData ? requestsData.length : 0,
+          };
+        }),
+      );
+      setUsers(usersWithCount);
+    }
+  }
+
+  async function fetchRequest() {
+    const { data, error } = await supabase
+      .from("request")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (!error && data) {
+      setRequests(data as Request[]);
+    }
+  }
+  useEffect(() => {
+    fetchUsers();
+    fetchRequest();
+  }, []);
+  const [selectedRequest, setSelectedRequest] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "detail">("list");
+  const [activeTab, setActiveTab] = useState<"requests" | "users">("requests");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [uploadFiles, setUploadFiles] = useState({
     cv: null as File | null,
     letter: null as File | null,
-  })
-  const [blockDialogOpen, setBlockDialogOpen] = useState(false)
-  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false)
-  const [userToAction, setUserToAction] = useState<RegularUser | null>(null)
+  });
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [deleteUserDialogOpen, setDeleteUserDialogOpen] = useState(false);
+  const [userToAction, setUserToAction] = useState<RegularUser | null>(null);
 
   // Vérifier l'authentification admin
   useEffect(() => {
-    const isAdmin = localStorage.getItem("isAdmin")
+    const isAdmin = sessionStorage.getItem("isAuthenticated");
     if (!isAdmin || isAdmin !== "true") {
       toast({
         title: "Accès non autorisé",
-        description: "Vous devez être administrateur pour accéder à cette page.",
+        description:
+          "Vous devez être administrateur pour accéder à cette page.",
         variant: "destructive",
-      })
-      router.push("/admin/login")
+      });
+      router.push("/admin/login");
     }
-  }, [router, toast])
+  }, [router, toast]);
 
   const getRequestById = (id: string) => {
-    return requests.find((r) => r.id === id)
-  }
+    return requests.find((r) => r.id === id);
+  };
 
   const handleAssignRequest = (requestId: string) => {
-    setRequests(
-      requests.map((r) => {
-        if (r.id === requestId) {
-          return {
-            ...r,
-            status: "in-progress" as const,
-            assignedAdmin: currentAdmin.name,
-          }
-        }
-        return r
-      }),
-    )
-    toast({
-      title: "Demande assignée",
-      description: "Vous avez pris en charge cette demande.",
-      variant: "default",
-    })
-  }
+    // Met à jour la request dans Supabase
+    supabase
+      .from("request")
+      .update({ status: "in-progress" })
+      .eq("id", requestId)
+      .then(() => {
+        setRequests(
+          requests.map((r) => {
+            if (r.id === requestId) {
+              return {
+                ...r,
+                status: "in-progress" as const,
+                assignedAdmin: currentAdmin.name,
+              };
+            }
+            return r;
+          })
+        );
+        toast({
+          title: "Demande assignée",
+          description: "Vous avez pris en charge cette demande.",
+          variant: "default",
+        });
+      });
+  };
 
   const handleCompleteRequest = (requestId: string) => {
     if (!uploadFiles.cv || !uploadFiles.letter) {
@@ -377,89 +393,127 @@ export default function AdminPage() {
         title: "Fichiers manquants",
         description: "Veuillez téléverser le CV et la lettre de motivation.",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setRequests(
-      requests.map((r) => {
-        if (r.id === requestId) {
-          return {
-            ...r,
-            status: "completed" as const,
-            completedBy: currentAdmin.name,
-            completedAt: new Date().toISOString(),
-            cvUrl: URL.createObjectURL(uploadFiles.cv!),
-            letterUrl: URL.createObjectURL(uploadFiles.letter!),
-          }
-        }
-        return r
-      }),
-    )
+    // Upload des fichiers dans le bucket Supabase Storage
+    const uploadAndGetUrl = async (file: File, path: string) => {
+      const { data, error } = await supabase.storage.from("documents").upload(path, file, { upsert: true });
+      if (error) throw error;
+      // Récupère l'URL publique
+      const { data: publicUrlData } = supabase.storage.from("documents").getPublicUrl(path);
+      return publicUrlData.publicUrl;
+    };
 
-    setUploadFiles({ cv: null, letter: null })
-    setSelectedRequest(null)
+    (async () => {
+      try {
+        const cvPath = `cv/${requestId}-${Date.now()}-${uploadFiles.cv ?uploadFiles.cv.name : ""}`;
+        const letterPath = `lettre/${requestId}-${Date.now()}-${uploadFiles.letter ? uploadFiles.letter.name : ""}`;
+        const cvUrl = await uploadAndGetUrl(uploadFiles.cv, cvPath);
+        const letterUrl = await uploadAndGetUrl(uploadFiles.letter, letterPath);
 
-    toast({
-      title: "Demande finalisée",
-      description: "Les documents ont été uploadés avec succès.",
-      variant: "default",
-    })
-  }
+        // Met à jour la request dans la base avec les URLs
+        await supabase
+          .from("request")
+          .update({
+            status: "completed",
+            
+            completed_at: new Date().toISOString(),
+            newCv: cvUrl,
+            newLM: letterUrl,
+          })
+          .eq("id", requestId);
+
+        setRequests(
+          requests.map((r) => {
+            if (r.id === requestId) {
+              return {
+                ...r,
+                status: "completed" as const,
+                completedBy: currentAdmin.name,
+                completedAt: new Date().toISOString(),
+                newCv: cvUrl,
+                newLM: letterUrl,
+              };
+            }
+            return r;
+          })
+        );
+
+        setUploadFiles({ cv: null, letter: null });
+        setSelectedRequest(null);
+
+        toast({
+          title: "Demande finalisée",
+          description: "Les documents ont été uploadés avec succès.",
+          variant: "default",
+        });
+      } catch (err) {
+        toast({
+          title: "Erreur lors de l'upload",
+          description: "Une erreur est survenue lors de l'envoi des fichiers.",
+          variant: "destructive",
+        });
+      }
+    })();
+  };
 
   const handleBlockClick = (user: RegularUser) => {
-    setUserToAction(user)
-    setBlockDialogOpen(true)
-  }
+    setUserToAction(user);
+    setBlockDialogOpen(true);
+  };
 
   const handleBlockConfirm = () => {
     if (userToAction) {
-      const wasBlocked = userToAction.isBlocked
-      setUsers(
-        users.map((u) => {
-          if (u.id === userToAction.id) {
-            return { ...u, isBlocked: !u.isBlocked }
-          }
-          return u
-        }),
-      )
-      toast({
-        title: wasBlocked ? "Utilisateur débloqué" : "Utilisateur bloqué",
-        description: `L'utilisateur ${userToAction.name} a été ${wasBlocked ? "débloqué" : "bloqué"}.`,
-        variant: "default",
-      })
-      setBlockDialogOpen(false)
-      setUserToAction(null)
+      const wasBlocked = userToAction.isBlocked;
+      // Update isBlocked in Supabase
+      supabase
+        .from("users")
+        .update({ isBlocked: !userToAction.isBlocked })
+        .eq("email", userToAction.email)
+        .then(() => {
+          toast({
+            title: wasBlocked ? "Utilisateur débloqué" : "Utilisateur bloqué",
+            description: `L'utilisateur ${userToAction.name} a été ${wasBlocked ? "débloqué" : "bloqué"}.`,
+            variant: "default",
+          });
+          setBlockDialogOpen(false);
+          setUserToAction(null);
+          fetchUsers(); // Rafraîchir la liste des utilisateurs pour refléter le changement de blocage
+        });
     }
-  }
+  };
 
   const handleDeleteUserClick = (user: RegularUser) => {
-    setUserToAction(user)
-    setDeleteUserDialogOpen(true)
-  }
+    setUserToAction(user);
+    setDeleteUserDialogOpen(true);
+  };
 
   const handleDeleteUserConfirm = () => {
     if (userToAction) {
-      setUsers(users.filter((u) => u.id !== userToAction.id))
+      setUsers(users.filter((u) => u.id !== userToAction.id));
       toast({
         title: "Utilisateur supprimé",
         description: `L'utilisateur ${userToAction.name} a été supprimé définitivement.`,
         variant: "default",
-      })
-      setDeleteUserDialogOpen(false)
-      setUserToAction(null)
+      });
+      setDeleteUserDialogOpen(false);
+      setUserToAction(null);
+      fetchUsers(); // Rafraîchir la liste des utilisateurs pour refléter la suppression
     }
-  }
+  };
 
   const filteredRequests = requests.filter((req) => {
     const matchesSearch =
-      req.userName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      req.email.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesStatus = statusFilter === "all" || req.status === statusFilter
-    return matchesSearch && matchesStatus
-  })
+      req.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      req.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || req.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
-  const request = selectedRequest ? getRequestById(selectedRequest) : null
+  const request = selectedRequest ? getRequestById(selectedRequest) : null;
 
   if (viewMode === "detail" && request) {
     return (
@@ -470,8 +524,8 @@ export default function AdminPage() {
             <div className="flex items-center justify-between">
               <button
                 onClick={() => {
-                  setViewMode("list")
-                  setSelectedRequest(null)
+                  setViewMode("list");
+                  setSelectedRequest(null);
                 }}
                 className="inline-flex items-center gap-2 text-foreground/70 hover:text-accent transition-colors"
               >
@@ -517,7 +571,9 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm text-foreground/60 mb-1">Client</p>
-                  <p className="font-medium text-foreground">{request.userName}</p>
+                  <p className="font-medium text-foreground">
+                    {request.first_name} {request.last_name}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-foreground/60 mb-1">Email</p>
@@ -528,28 +584,40 @@ export default function AdminPage() {
                   <p className="font-medium text-foreground">{request.phone}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground/60 mb-1">Date de soumission</p>
+                  <p className="text-sm text-foreground/60 mb-1">
+                    Date de soumission
+                  </p>
                   <p className="font-medium text-foreground">
-                    {new Date(request.date).toLocaleDateString("fr-FR")}
+                    {new Date(request.created_at).toLocaleDateString("fr-FR")}
                   </p>
                 </div>
-                {request.assignedAdmin && (
+                {/* {request.assignedAdmin && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-1">Administrateur assigné</p>
-                    <p className="font-medium text-foreground">{request.assignedAdmin}</p>
+                    <p className="text-sm text-foreground/60 mb-1">
+                      Administrateur assigné
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {request.assignedAdmin}
+                    </p>
                   </div>
-                )}
-                {request.completedBy && (
+                )} */}
+                {/* {request.completedBy && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-1">Finalisé par</p>
-                    <p className="font-medium text-foreground">{request.completedBy}</p>
+                    <p className="text-sm text-foreground/60 mb-1">
+                      Finalisé par
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {request.completedBy}
+                    </p>
                     <p className="text-xs text-foreground/60 mt-1">
                       {request.completedAt
-                        ? new Date(request.completedAt).toLocaleDateString("fr-FR")
+                        ? new Date(request.completedAt).toLocaleDateString(
+                            "fr-FR",
+                          )
                         : ""}
                     </p>
                   </div>
-                )}
+                )} */}
               </div>
             </div>
 
@@ -563,25 +631,35 @@ export default function AdminPage() {
                 <div>
                   <p className="text-sm text-foreground/60 mb-1">Nom complet</p>
                   <p className="font-medium text-foreground">
-                    {request.formData.firstName} {request.formData.lastName}
+                    {request.first_name} {request.last_name}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-foreground/60 mb-1">Âge</p>
-                  <p className="font-medium text-foreground">{request.formData.age} ans</p>
+                  <p className="font-medium text-foreground">
+                    {request.age} ans
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-foreground/60 mb-1">Email</p>
-                  <p className="font-medium text-foreground">{request.formData.email}</p>
+                  <p className="font-medium text-foreground">
+                    {request.email}
+                  </p>
                 </div>
                 <div>
                   <p className="text-sm text-foreground/60 mb-1">Téléphone</p>
-                  <p className="font-medium text-foreground">{request.formData.phone}</p>
+                  <p className="font-medium text-foreground">
+                    {request.phone}
+                  </p>
                 </div>
-                {request.formData.maritalStatus && (
+                {request.marital_status && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-1">Situation matrimoniale</p>
-                    <p className="font-medium text-foreground">{request.formData.maritalStatus}</p>
+                    <p className="text-sm text-foreground/60 mb-1">
+                      Situation matrimoniale
+                    </p>
+                    <p className="font-medium text-foreground">
+                      {request.marital_status}
+                    </p>
                   </div>
                 )}
               </div>
@@ -595,31 +673,48 @@ export default function AdminPage() {
               </h2>
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm text-foreground/60 mb-2">Présentation personnelle</p>
-                  <p className="text-foreground">{request.formData.presentation || "Non renseigné"}</p>
+                  <p className="text-sm text-foreground/60 mb-2">
+                    Présentation personnelle
+                  </p>
+                  <p className="text-foreground">
+                    {request.presentation || "Non renseigné"}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground/60 mb-2">Objectif professionnel</p>
-                  <p className="text-foreground">{request.formData.objective || "Non renseigné"}</p>
+                  <p className="text-sm text-foreground/60 mb-2">
+                    Objectif professionnel
+                  </p>
+                  <p className="text-foreground">
+                    {request.objective || "Non renseigné"}
+                  </p>
                 </div>
                 <div>
-                  <p className="text-sm text-foreground/60 mb-2">Domaine d'étude ou métier visé</p>
-                  <p className="text-foreground">{request.formData.field || "Non renseigné"}</p>
+                  <p className="text-sm text-foreground/60 mb-2">
+                    Domaine d'étude ou métier visé
+                  </p>
+                  <p className="text-foreground">
+                    {request.field || "Non renseigné"}
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* 3. Diplômes */}
-            {request.formData.diplomas.length > 0 && (
+            {request.diplomas.length > 0 && (
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
                   <Award className="h-5 w-5" />
                   3. Diplômes et formations
                 </h2>
                 <div className="space-y-4">
-                  {request.formData.diplomas.map((diploma, idx) => (
-                    <div key={diploma.id} className="border border-border rounded-lg p-4">
-                      <h3 className="font-medium text-foreground mb-2">Diplôme {idx + 1}</h3>
+                  {request.diplomas.map((diploma:any, idx:number) => (
+                    <div
+                      key={diploma.id}
+                      className="border border-border rounded-lg p-4"
+                    >
+                      <h3 className="font-medium text-foreground mb-2">
+                        Diplôme {idx + 1}
+                      </h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                           <p className="text-foreground/60 mb-1">Diplôme</p>
@@ -630,13 +725,21 @@ export default function AdminPage() {
                           <p className="text-foreground">{diploma.year}</p>
                         </div>
                         <div>
-                          <p className="text-foreground/60 mb-1">Établissement</p>
-                          <p className="text-foreground">{diploma.institution}</p>
+                          <p className="text-foreground/60 mb-1">
+                            Établissement
+                          </p>
+                          <p className="text-foreground">
+                            {diploma.institution}
+                          </p>
                         </div>
                         {diploma.specialty && (
                           <div>
-                            <p className="text-foreground/60 mb-1">Spécialité</p>
-                            <p className="text-foreground">{diploma.specialty}</p>
+                            <p className="text-foreground/60 mb-1">
+                              Spécialité
+                            </p>
+                            <p className="text-foreground">
+                              {diploma.specialty}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -647,28 +750,39 @@ export default function AdminPage() {
             )}
 
             {/* 4. Expériences professionnelles */}
-            {request.formData.experiences.length > 0 && (
+            {request.experiences.length > 0 && (
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
                   <Briefcase className="h-5 w-5" />
                   4. Expériences professionnelles
                 </h2>
                 <div className="space-y-4">
-                  {request.formData.experiences.map((exp, idx) => (
-                    <div key={exp.id} className="border border-border rounded-lg p-4">
-                      <h3 className="font-medium text-foreground mb-2">Expérience {idx + 1}</h3>
+                  {request.experiences.map((exp:any, idx:number) => (
+                    <div
+                      key={exp.id}
+                      className="border border-border rounded-lg p-4"
+                    >
+                      <h3 className="font-medium text-foreground mb-2">
+                        Expérience {idx + 1}
+                      </h3>
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <p className="text-sm text-foreground/60 mb-1">Poste</p>
+                            <p className="text-sm text-foreground/60 mb-1">
+                              Poste
+                            </p>
                             <p className="text-foreground">{exp.position}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-foreground/60 mb-1">Entreprise</p>
+                            <p className="text-sm text-foreground/60 mb-1">
+                              Entreprise
+                            </p>
                             <p className="text-foreground">{exp.company}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-foreground/60 mb-1">Période</p>
+                            <p className="text-sm text-foreground/60 mb-1">
+                              Période
+                            </p>
                             <p className="text-foreground">
                               {exp.startMonth}/{exp.startYear} -{" "}
                               {exp.current
@@ -679,7 +793,9 @@ export default function AdminPage() {
                         </div>
                         {exp.tasks && (
                           <div>
-                            <p className="text-sm text-foreground/60 mb-1">Tâches et responsabilités</p>
+                            <p className="text-sm text-foreground/60 mb-1">
+                              Tâches et responsabilités
+                            </p>
                             <p className="text-foreground">{exp.tasks}</p>
                           </div>
                         )}
@@ -697,36 +813,54 @@ export default function AdminPage() {
                 5. Compétences
               </h2>
               <div className="space-y-4">
-                {request.formData.itSkills && (
+                {request.itSkills && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-2">Compétences informatiques</p>
-                    <p className="text-foreground">{request.formData.itSkills}</p>
+                    <p className="text-sm text-foreground/60 mb-2">
+                      Compétences informatiques
+                    </p>
+                    <p className="text-foreground">
+                      {request.itSkills}
+                    </p>
                   </div>
                 )}
-                {request.formData.software && (
+                {request.software && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-2">Logiciels maîtrisés</p>
-                    <p className="text-foreground">{request.formData.software}</p>
+                    <p className="text-sm text-foreground/60 mb-2">
+                      Logiciels maîtrisés
+                    </p>
+                    <p className="text-foreground">
+                      {request.software}
+                    </p>
                   </div>
                 )}
-                {request.formData.languages && (
+                {request.languages && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-2">Langages de programmation</p>
-                    <p className="text-foreground">{request.formData.languages}</p>
+                    <p className="text-sm text-foreground/60 mb-2">
+                      Langages de programmation
+                    </p>
+                    <p className="text-foreground">
+                      {request.languages}
+                    </p>
                   </div>
                 )}
-                {request.formData.technicalSkills && (
+                {request.technicalSkills && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-2">Compétences techniques</p>
-                    <p className="text-foreground">{request.formData.technicalSkills}</p>
+                    <p className="text-sm text-foreground/60 mb-2">
+                      Compétences techniques
+                    </p>
+                    <p className="text-foreground">
+                      {request.technicalSkills}
+                    </p>
                   </div>
                 )}
-                {request.formData.organizationalSkills && (
+                {request.organizationalSkills && (
                   <div>
                     <p className="text-sm text-foreground/60 mb-2">
                       Compétences organisationnelles / relationnelles
                     </p>
-                    <p className="text-foreground">{request.formData.organizationalSkills}</p>
+                    <p className="text-foreground">
+                      {request.organizationalSkills}
+                    </p>
                   </div>
                 )}
               </div>
@@ -738,35 +872,41 @@ export default function AdminPage() {
                 6. Aptitudes et qualités personnelles
               </h2>
               <div className="space-y-2 mb-4">
-                {request.formData.organization && (
+                {request.organization && (
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-success" />
-                    <span className="text-foreground">Sens de l'organisation</span>
+                    <span className="text-foreground">
+                      Sens de l'organisation
+                    </span>
                   </div>
                 )}
-                {request.formData.teamwork && (
+                {request.teamwork && (
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-success" />
                     <span className="text-foreground">Esprit d'équipe</span>
                   </div>
                 )}
-                {request.formData.punctuality && (
+                {request.punctuality && (
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-success" />
                     <span className="text-foreground">Ponctualité</span>
                   </div>
                 )}
-                {request.formData.rigor && (
+                {request.rigor && (
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-success" />
                     <span className="text-foreground">Rigueur</span>
                   </div>
                 )}
               </div>
-              {request.formData.otherQualities && (
+              {request.otherQualities && (
                 <div>
-                  <p className="text-sm text-foreground/60 mb-2">Autres qualités</p>
-                  <p className="text-foreground">{request.formData.otherQualities}</p>
+                  <p className="text-sm text-foreground/60 mb-2">
+                    Autres qualités
+                  </p>
+                  <p className="text-foreground">
+                    {request.otherQualities}
+                  </p>
                 </div>
               )}
             </div>
@@ -778,29 +918,37 @@ export default function AdminPage() {
                 7. Centres d'intérêt / Loisirs
               </h2>
               <div className="space-y-4">
-                {request.formData.hobbies && (
+                {request.hobbies && (
                   <div>
                     <p className="text-sm text-foreground/60 mb-2">Loisirs</p>
-                    <p className="text-foreground">{request.formData.hobbies}</p>
+                    <p className="text-foreground">
+                      {request.hobbies}
+                    </p>
                   </div>
                 )}
-                {request.formData.sports && (
+                {request.sports && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-2">Activités sportives</p>
-                    <p className="text-foreground">{request.formData.sports}</p>
+                    <p className="text-sm text-foreground/60 mb-2">
+                      Activités sportives
+                    </p>
+                    <p className="text-foreground">{request.sports}</p>
                   </div>
                 )}
-                {request.formData.cultural && (
+                {request.cultural && (
                   <div>
-                    <p className="text-sm text-foreground/60 mb-2">Intérêts culturels ou personnels</p>
-                    <p className="text-foreground">{request.formData.cultural}</p>
+                    <p className="text-sm text-foreground/60 mb-2">
+                      Intérêts culturels ou personnels
+                    </p>
+                    <p className="text-foreground">
+                      {request.cultural}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
 
             {/* Upload section - si en cours */}
-            {request.status === "in-progress" && (
+            {(request.status === "in-progress") && (
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="text-xl font-semibold text-foreground mb-4 flex items-center gap-2">
                   <Upload className="h-5 w-5" />
@@ -808,12 +956,17 @@ export default function AdminPage() {
                 </h2>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-foreground mb-2">CV (PDF)</label>
+                    <label className="block text-sm font-medium text-foreground mb-2">
+                      CV (PDF)
+                    </label>
                     <input
                       type="file"
                       accept=".pdf"
                       onChange={(e) =>
-                        setUploadFiles({ ...uploadFiles, cv: e.target.files?.[0] || null })
+                        setUploadFiles({
+                          ...uploadFiles,
+                          cv: e.target.files?.[0] || null,
+                        })
                       }
                       className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground"
                     />
@@ -826,7 +979,10 @@ export default function AdminPage() {
                       type="file"
                       accept=".pdf"
                       onChange={(e) =>
-                        setUploadFiles({ ...uploadFiles, letter: e.target.files?.[0] || null })
+                        setUploadFiles({
+                          ...uploadFiles,
+                          letter: e.target.files?.[0] || null,
+                        })
                       }
                       className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground"
                     />
@@ -842,33 +998,37 @@ export default function AdminPage() {
             )}
 
             {/* Documents finaux - si terminé */}
-            {request.status === "completed" && request.cvUrl && request.letterUrl && (
-              <div className="bg-card border border-border rounded-lg p-6">
-                <h2 className="text-xl font-semibold text-foreground mb-4">Documents finaux</h2>
-                <div className="flex gap-4">
-                  <a
-                    href={request.cvUrl}
-                    download
-                    className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-card"
-                  >
-                    <Download className="h-4 w-4" />
-                    Télécharger le CV
-                  </a>
-                  <a
-                    href={request.letterUrl}
-                    download
-                    className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-card"
-                  >
-                    <Download className="h-4 w-4" />
-                    Télécharger la lettre
-                  </a>
+            {request.status === "completed" &&
+              request.cvUrl &&
+              request.letterUrl && (
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <h2 className="text-xl font-semibold text-foreground mb-4">
+                    Documents finaux
+                  </h2>
+                  <div className="flex gap-4">
+                    <a
+                      href={request.cvUrl}
+                      download
+                      className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-card"
+                    >
+                      <Download className="h-4 w-4" />
+                      Télécharger le CV
+                    </a>
+                    <a
+                      href={request.letterUrl}
+                      download
+                      className="flex items-center gap-2 px-4 py-2 border border-border rounded-lg text-foreground hover:bg-card"
+                    >
+                      <Download className="h-4 w-4" />
+                      Télécharger la lettre
+                    </a>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -884,7 +1044,9 @@ export default function AdminPage() {
               <ArrowLeft className="h-4 w-4" />
               <span className="text-sm">Retour à l'accueil</span>
             </Link>
-            <h1 className="text-xl font-bold text-foreground">Espace Administrateur</h1>
+            <h1 className="text-xl font-bold text-foreground">
+              Espace Administrateur
+            </h1>
           </div>
         </div>
       </div>
@@ -922,7 +1084,9 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="bg-card border border-border rounded-lg p-4">
                 <p className="text-sm text-foreground/60 mb-1">Total</p>
-                <p className="text-2xl font-bold text-foreground">{requests.length}</p>
+                <p className="text-2xl font-bold text-foreground">
+                  {requests.length}
+                </p>
               </div>
               <div className="bg-card border border-border rounded-lg p-4">
                 <p className="text-sm text-foreground/60 mb-1">Nouvelles</p>
@@ -1001,15 +1165,21 @@ export default function AdminPage() {
                       <tr key={request.id} className="hover:bg-card/50">
                         <td className="px-6 py-4">
                           <div>
-                            <p className="font-medium text-foreground">{request.userName}</p>
-                            <p className="text-sm text-foreground/60">{request.email}</p>
+                            <p className="font-medium text-foreground">
+                              {request.first_name} {request.last_name}
+                            </p>
+                            <p className="text-sm text-foreground/60">
+                              {request.email}
+                            </p>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-foreground/70">
-                          {new Date(request.date).toLocaleDateString("fr-FR")}
+                          {new Date(request.created_at).toLocaleDateString("fr-FR")}
                         </td>
                         <td className="px-6 py-4 text-sm text-foreground/70">
-                          {request.type === "amelioration" ? "Amélioration de CV" : "Nouvelle demande"}
+                          {request.request_type !== "new"
+                            ? "Amélioration de CV"
+                            : "Nouvelle demande"}
                         </td>
                         <td className="px-6 py-4">
                           <span
@@ -1034,14 +1204,16 @@ export default function AdminPage() {
                         <td className="px-6 py-4">
                           <button
                             onClick={() => {
-                              setSelectedRequest(request.id)
-                              setViewMode("detail")
+                              setSelectedRequest(request.id);
+                              setViewMode("detail");
                             }}
                             className="group relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm border border-border rounded-lg text-foreground hover:bg-card transition-colors min-w-[36px] sm:min-w-0"
                             title="Voir les détails de la demande"
                           >
                             <Eye className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                            <span className="hidden sm:inline">Voir détails</span>
+                            <span className="hidden sm:inline">
+                              Voir détails
+                            </span>
                             <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                               Voir les détails
                             </span>
@@ -1089,23 +1261,32 @@ export default function AdminPage() {
                       <tr key={user.id} className="hover:bg-card/50">
                         <td className="px-6 py-4">
                           <div>
-                            <p className="font-medium text-foreground">{user.name}</p>
-                            <p className="text-sm text-foreground/60">{user.email}</p>
+                            <p className="font-medium text-foreground">
+                              {user.first_name} {user.last_name}
+                            </p>
+                            <p className="text-sm text-foreground/60">
+                              {user.email}
+                            </p>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm">
                             <p className="text-foreground">{user.phone}</p>
-                            {user.whatsappPreferred && (
-                              <span className="text-accent text-xs">WhatsApp préféré</span>
+                            {user.whatsapp_preferred && (
+                              <span className="text-accent text-xs">
+                                WhatsApp préféré
+                              </span>
                             )}
                           </div>
                         </td>
                         <td className="px-6 py-4 text-sm text-foreground/70">
-                          {user.requestsCount} demande{user.requestsCount > 1 ? "s" : ""}
+                          {user.requestsCount} demande
+                          {user.requestsCount > 1 ? "s" : ""}
                         </td>
                         <td className="px-6 py-4 text-sm text-foreground/70">
-                          {new Date(user.createdAt).toLocaleDateString("fr-FR")}
+                          {new Date(user.created_at).toLocaleDateString(
+                            "fr-FR",
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <span
@@ -1127,34 +1308,46 @@ export default function AdminPage() {
                                   ? "bg-success/20 text-success border border-success/30"
                                   : "bg-warning/20 text-warning border border-warning/30"
                               }`}
-                              title={user.isBlocked ? "Débloquer l'utilisateur" : "Bloquer l'utilisateur"}
+                              title={
+                                user.isBlocked
+                                  ? "Débloquer l'utilisateur"
+                                  : "Bloquer l'utilisateur"
+                              }
                             >
                               {user.isBlocked ? (
                                 <>
                                   <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                  <span className="hidden sm:inline">Débloquer</span>
+                                  <span className="hidden sm:inline">
+                                    Débloquer
+                                  </span>
                                 </>
                               ) : (
                                 <>
                                   <Ban className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                                  <span className="hidden sm:inline">Bloquer</span>
+                                  <span className="hidden sm:inline">
+                                    Bloquer
+                                  </span>
                                 </>
                               )}
                               <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
-                                {user.isBlocked ? "Débloquer l'utilisateur" : "Bloquer l'utilisateur"}
+                                {user.isBlocked
+                                  ? "Débloquer l'utilisateur"
+                                  : "Bloquer l'utilisateur"}
                               </span>
                             </button>
-                            <button
+                            {/* <button
                               onClick={() => handleDeleteUserClick(user)}
                               className="group relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm rounded-lg bg-destructive/10 text-destructive border border-destructive/30 hover:bg-destructive/20 transition-colors min-w-[36px] sm:min-w-0"
                               title="Supprimer l'utilisateur"
                             >
                               <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-                              <span className="hidden sm:inline">Supprimer</span>
+                              <span className="hidden sm:inline">
+                                Supprimer
+                              </span>
                               <span className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                                 Supprimer l'utilisateur
                               </span>
-                            </button>
+                            </button> */}
                           </div>
                         </td>
                       </tr>
@@ -1211,7 +1404,10 @@ export default function AdminPage() {
         </Dialog>
 
         {/* Modal de confirmation de suppression d'utilisateur */}
-        <Dialog open={deleteUserDialogOpen} onOpenChange={setDeleteUserDialogOpen}>
+        <Dialog
+          open={deleteUserDialogOpen}
+          onOpenChange={setDeleteUserDialogOpen}
+        >
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-destructive">
@@ -1219,7 +1415,9 @@ export default function AdminPage() {
                 Supprimer l'utilisateur
               </DialogTitle>
               <DialogDescription className="pt-2">
-                Êtes-vous sûr de vouloir supprimer définitivement {userToAction?.name} ? Cette action est irréversible et toutes les données associées à cet utilisateur seront perdues.
+                Êtes-vous sûr de vouloir supprimer définitivement{" "}
+                {userToAction?.name} ? Cette action est irréversible et toutes
+                les données associées à cet utilisateur seront perdues.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
@@ -1240,5 +1438,5 @@ export default function AdminPage() {
         </Dialog>
       </div>
     </div>
-  )
+  );
 }

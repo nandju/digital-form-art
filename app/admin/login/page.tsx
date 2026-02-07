@@ -1,71 +1,82 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import Image from "next/image"
-import { ArrowLeft, Mail, Lock, Shield } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import Image from "next/image";
+import { ArrowLeft, Mail, Lock, Shield } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/lib/supabase";
+import bcrypt from "bcryptjs";
 
 export default function AdminLoginPage() {
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-  })
-  const [isLoading, setIsLoading] = useState(false)
+  });
+  const [isLoading, setIsLoading] = useState(false);
 
   // Vérifier si déjà connecté en tant qu'admin
   useEffect(() => {
-    const isAdmin = localStorage.getItem("isAdmin")
+    const isAdmin = sessionStorage.getItem("isAdmin");
     if (isAdmin === "true") {
-      router.push("/admin")
+      router.push("/admin");
     }
-  }, [router])
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
+    e.preventDefault();
+    setIsLoading(true);
+  
     // Simulation de la connexion admin - À remplacer par un appel API réel
     try {
-      // TODO: Remplacer par un appel API réel
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Pour la démo, accepter admin@digitalformart.com / admin123
-      // Dans un vrai projet, cela viendrait d'une base de données
-      if (
-        formData.email === "admin@digitalformart.com" &&
-        formData.password === "admin123"
-      ) {
-        // Stocker l'état de connexion admin
-        localStorage.setItem("isAdmin", "true")
-        localStorage.setItem("adminEmail", formData.email)
-
+     const { data: user, error } = await supabase
+        .from("users")
+        .select("email,password")
+        .eq("email", formData.email).eq("is_admin", true)
+        .single();
+      if (error || !user) {
         toast({
-          title: "Connexion réussie !",
-          description: "Vous allez être redirigé vers l'espace administrateur.",
-          variant: "default",
-        })
-
-        // Redirection vers l'espace admin
-        setTimeout(() => {
-          router.push("/admin")
-        }, 1000)
-      } else {
-        throw new Error("Identifiants incorrects")
+          title: "Information incorrecte",
+          description: "Mot de passe ou email incorrect",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
       }
+      // Compare le mot de passe
+      const isMatch = await bcrypt.compare(formData.password, user.password);
+      if (!isMatch) {
+        toast({
+          title: "Information incorrecte",
+          description: "Mot de passe ou email incorrect",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      // Authentification réussie
+      sessionStorage.setItem("isAuthenticated", "true");
+      sessionStorage.setItem("userEmail", user.email);
+      toast({
+        title: "Connexion réussie",
+        description: "Bienvenue !",
+        variant: "default",
+      });
+      router.push("/admin");
     } catch (error) {
       toast({
         title: "Erreur de connexion",
         description: "Email ou mot de passe incorrect. Veuillez réessayer.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
@@ -91,13 +102,17 @@ export default function AdminLoginPage() {
                 height={60}
                 className="object-contain"
               />
-              <span className="text-2xl font-bold text-foreground">DIGITAL Form Art</span>
+              <span className="text-2xl font-bold text-foreground">
+                DIGITAL Form Art
+              </span>
             </Link>
           </div>
 
           <div className="flex items-center justify-center gap-2 mb-4">
             <Shield className="h-6 w-6 text-accent" />
-            <h1 className="text-2xl font-bold text-foreground text-center">Connexion Admin</h1>
+            <h1 className="text-2xl font-bold text-foreground text-center">
+              Connexion Admin
+            </h1>
           </div>
           <p className="text-sm text-foreground/60 mb-8 text-center">
             Accédez à l'espace administrateur
@@ -106,7 +121,10 @@ export default function AdminLoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-foreground mb-2"
+              >
                 Adresse e-mail administrateur
               </label>
               <div className="relative">
@@ -116,7 +134,9 @@ export default function AdminLoginPage() {
                   type="email"
                   required
                   value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                   placeholder="admin@digitalformart.com"
                 />
@@ -125,7 +145,10 @@ export default function AdminLoginPage() {
 
             {/* Mot de passe */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-foreground mb-2"
+              >
                 Mot de passe
               </label>
               <div className="relative">
@@ -135,7 +158,9 @@ export default function AdminLoginPage() {
                   type="password"
                   required
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, password: e.target.value })
+                  }
                   className="w-full pl-10 pr-4 py-3 rounded-lg border border-border bg-background text-foreground placeholder:text-foreground/40 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
                   placeholder="••••••••"
                 />
@@ -143,9 +168,13 @@ export default function AdminLoginPage() {
             </div>
 
             {/* Note pour la démo */}
-            <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 text-xs text-foreground/70">
-              <strong>Note (Démo) :</strong> Utilisez <code className="bg-background px-1 rounded">admin@digitalformart.com</code> / <code className="bg-background px-1 rounded">admin123</code>
-            </div>
+            {/* <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 text-xs text-foreground/70">
+              <strong>Note (Démo) :</strong> Utilisez{" "}
+              <code className="bg-background px-1 rounded">
+                admin@digitalformart.com
+              </code>{" "}
+              / <code className="bg-background px-1 rounded">admin123</code>
+            </div> */}
 
             {/* Bouton de connexion */}
             <button
@@ -159,5 +188,5 @@ export default function AdminLoginPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

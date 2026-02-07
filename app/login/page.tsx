@@ -6,6 +6,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, Mail, Lock } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabase"
+import bcrypt from "bcryptjs"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -17,41 +19,55 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    // Simulation de la connexion - À remplacer par un appel API réel
+    e.preventDefault();
+    setIsLoading(true);
     try {
-      // TODO: Remplacer par un appel API réel
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Validation simple pour la démo
-      if (formData.email && formData.password) {
-        // Stocker l'état de connexion (dans un vrai projet, utiliser un système d'auth)
-        localStorage.setItem("isAuthenticated", "true")
-        localStorage.setItem("userEmail", formData.email)
-
+      // Vérifie si un utilisateur existe avec l'email saisi
+      const { data: users, error } = await supabase
+        .from("users")
+        .select("password, email")
+        .eq("email", formData.email)
+        .limit(1);
+      if (error || !users || users.length === 0) {
         toast({
-          title: "Connexion réussie !",
-          description: "Vous allez être redirigé vers votre espace personnel.",
-          variant: "default",
-        })
-
-        // Redirection vers le dashboard après un court délai
-        setTimeout(() => {
-          router.push("/dashboard")
-        }, 1000)
-      } else {
-        throw new Error("Email et mot de passe requis")
+          title: "Erreur de connexion",
+          description: "Email ou mot de passe incorrect. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
       }
+      // Vérifie le mot de passe avec bcryptjs
+      const user = users[0];
+      const isPasswordValid = bcrypt.compareSync(formData.password, user.password);
+      if (!isPasswordValid) {
+        toast({
+          title: "Erreur de connexion",
+          description: "Email ou mot de passe incorrect. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      sessionStorage.setItem("isAuthenticated", "true");
+      sessionStorage.setItem("userEmail", formData.email);
+
+      toast({
+        title: "Connexion réussie !",
+        description: "Vous allez être redirigé vers votre espace personnel.",
+        variant: "default",
+      });
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1000);
     } catch (error) {
       toast({
         title: "Erreur de connexion",
         description: "Email ou mot de passe incorrect. Veuillez réessayer.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 

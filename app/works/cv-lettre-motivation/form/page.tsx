@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, ArrowRight, Check, Upload, X, Plus, FileText, Wand2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabase"
 
 interface Diploma {
   id: string
@@ -35,12 +36,16 @@ function CVFormContent() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [requestType, setRequestType] = useState<"new" | "improve">("new")
   const isUpdateMode = searchParams.get("mode") === "update"
+
   const isImproveFlow = isUpdateMode || requestType === "improve"
   const totalSteps = isUpdateMode ? 8 : 9
 
   // Vérifier l'authentification
+  const [userEmailRequester, setUserEmailRequester] = useState<string | null>(null);
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem("isAuthenticated")
+    const isAuthenticated = sessionStorage.getItem("isAuthenticated")
+    const userEmail = sessionStorage.getItem("userEmail")
+    setUserEmailRequester(userEmail);
     if (!isAuthenticated) {
       toast({
         title: "Accès non autorisé",
@@ -48,8 +53,64 @@ function CVFormContent() {
         variant: "destructive",
       })
       router.push("/login")
+      return;
     }
-  }, [router, toast])
+    if (isUpdateMode) {
+      const requestId = searchParams.get("requestId");
+      if (requestId && userEmail) {
+        supabase
+          .from("request")
+          .select("*")
+          .eq("id", requestId).eq("owner_email", userEmail)
+          .single()
+          .then(({ data, error }) => {
+            if (error || !data) {
+              toast({
+                title: "Demande introuvable",
+                description: "Impossible de trouver la demande à mettre à jour.",
+                variant: "destructive",
+              });
+              router.push("/dashboard");
+              return;
+            }
+            
+            // Attribuer les datas au formData
+            setFormData((prev) => ({
+              ...prev,
+              firstName: data.first_name || "",
+              lastName: data.last_name || "",
+              age: data.age || "",
+              email: data.email || "",
+              phone: data.phone || "",
+              maritalStatus: data.marital_status || "",
+              photo: null,
+              hasDrivingLicense: data.has_driving_license || "",
+              drivingLicenseType: data.driving_license_type || "",
+              oldCv: null,
+              presentation: data.presentation || "",
+              objective: data.objective || "",
+              field: data.field || "",
+              diplomas: data.diplomas || [],
+              experiences: data.experiences || [],
+              itSkills: data.it_skills || "",
+              software: data.software || "",
+              languages: data.languages || "",
+              technicalSkills: data.technical_skills || "",
+              organizationalSkills: data.organizational_skills || "",
+              organization: data.organization || false,
+              teamwork: data.teamwork || false,
+              punctuality: data.punctuality || false,
+              rigor: data.rigor || false,
+              otherQualities: data.other_qualities || "",
+              hobbies: data.hobbies || "",
+              sports: data.sports || "",
+              cultural: data.cultural || "",
+              owner_email: data.owner_email || ""
+            }));
+          });
+      }
+    }
+  }, [router, toast, isUpdateMode, searchParams]);
 
   const [formData, setFormData] = useState({
     // Étape 1 - Informations personnelles
@@ -93,6 +154,7 @@ function CVFormContent() {
     hobbies: "",
     sports: "",
     cultural: "",
+    owner_email: userEmailRequester || "",  
   })
 
   const addDiploma = () => {
@@ -269,7 +331,6 @@ function CVFormContent() {
 
   const handleSubmit = async () => {
     setIsSubmitting(true)
-
     try {
       // Validation finale
       if (!isImproveFlow) {
@@ -284,8 +345,7 @@ function CVFormContent() {
           return
         }
       }
-
-      if (isImproveFlow && !formData.oldCv) {
+      if (isImproveFlow && !formData.oldCv && !isUpdateMode) {
         toast({
           title: "Ancien CV requis",
           description:
@@ -296,29 +356,134 @@ function CVFormContent() {
         return
       }
 
-      // TODO: Envoyer les données au backend (inclure le type de demande et l'ancien CV si fourni)
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      // Upload des fichiers dans Supabase Storage
+      let photoUrl = null;
+      let oldCvUrl = null;
+      if (formData.photo && formData.photo instanceof File) {
+        const { data, error } = await supabase.storage
+          .from("documents")
+          .upload(`photos/${Date.now()}_${formData.photo.name}`, formData.photo);
+        if (error) {
+          toast({
+            title: "Erreur lors de l'upload de la photo",
+            description: error.message,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        photoUrl = supabase.storage.from("documents").getPublicUrl(data.path).data.publicUrl;
+      }
+      if (formData.oldCv && formData.oldCv instanceof File) {
+        const { data, error } = await supabase.storage
+          .from("documents")
+          .upload(`oldcv/${Date.now()}_${formData.oldCv.name}`, formData.oldCv);
+        if (error) {
+          toast({
+            title: "Erreur lors de l'upload du CV",
+            description: error.message,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        oldCvUrl = supabase.storage.from("documents").getPublicUrl(data.path).data.publicUrl;
+      }
 
-      // Marquer qu'une nouvelle demande a été créée
-      sessionStorage.setItem("newRequestCreated", "true")
+      // Préparation des données à enregistrer
+      const requestPayload = {
+        owner_email: userEmailRequester,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        age: formData.age,
+        email: formData.email,
+        phone: formData.phone,
+        marital_status: formData.maritalStatus,
+        photo: formData.photo ? photoUrl : null,
+        has_driving_license: formData.hasDrivingLicense,
+        driving_license_type: formData.drivingLicenseType,
+        old_cv: formData.oldCv ? oldCvUrl : null,
+        presentation: formData.presentation,
+        objective: formData.objective,
+        field: formData.field,
+        diplomas: formData.diplomas,
+        experiences: formData.experiences,
+        it_skills: formData.itSkills,
+        software: formData.software,
+        languages: formData.languages,
+        technical_skills: formData.technicalSkills,
+        organizational_skills: formData.organizationalSkills,
+        organization: formData.organization,
+        teamwork: formData.teamwork,
+        punctuality: formData.punctuality,
+        rigor: formData.rigor,
+        other_qualities: formData.otherQualities,
+        hobbies: formData.hobbies,
+        sports: formData.sports,
+        cultural: formData.cultural,
+        request_type: requestType,
+        created_at: new Date().toISOString()
+      };
 
-      toast({
-        title: "Demande soumise avec succès !",
-        description: "Votre demande de CV & Lettre de motivation a été enregistrée. Vous serez notifié dès qu'elle sera traitée.",
-        variant: "default",
-      })
-
-      // Redirection vers le dashboard après un court délai
-      setTimeout(() => {
-        router.push("/dashboard")
-      }, 1500)
+      if (isUpdateMode) {
+        // Update la demande existante
+        const requestId = searchParams.get("requestId");
+        if (!requestId) {
+          toast({
+            title: "Erreur lors de la mise à jour",
+            description: "Identifiant de la demande manquant.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        // Supprime created_at pour ne pas l'écraser
+        const { created_at, ...updatePayload } = requestPayload;
+        const { error } = await supabase
+          .from("request")
+          .update(updatePayload)
+          .eq("id", requestId)
+          .eq("owner_email", userEmailRequester);
+        if (error) {
+          toast({
+            title: "Erreur lors de la mise à jour",
+            description: error.message,
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+        toast({
+          title: "Demande mise à jour avec succès !",
+          description: "Votre demande a été modifiée.",
+          variant: "default",
+        });
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1500);
+      } else {
+        // Création nouvelle demande
+        const { error } = await supabase.from("request").insert([requestPayload]);
+        if (error) {
+          throw error;
+        }
+        sessionStorage.setItem("newRequestCreated", "true");
+        toast({
+          title: "Demande soumise avec succès !",
+          description: "Votre demande de CV & Lettre de motivation a été enregistrée. Vous serez notifié dès qu'elle sera traitée.",
+          variant: "default",
+        });
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 1500);
+      }
     } catch (error) {
       toast({
         title: "Erreur lors de la soumission",
         description: "Une erreur est survenue. Veuillez réessayer.",
         variant: "destructive",
-      })
-      setIsSubmitting(false)
+      });
+      setIsSubmitting(false);
     }
   }
 

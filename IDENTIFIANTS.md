@@ -131,7 +131,7 @@
 
 ---
 
-## 🔑 LocalStorage Keys
+## 🔑 SessionStorage Keys
 
 ### Authentification Utilisateur
 - `isAuthenticated` : `"true"` (si connecté)

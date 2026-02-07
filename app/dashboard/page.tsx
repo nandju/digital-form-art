@@ -6,6 +6,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { Download, FileText, Clock, CheckCircle, XCircle, ArrowLeft, Plus, Trash2, Edit } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/lib/supabase"
 import {
   Dialog,
   DialogContent,
@@ -43,13 +44,27 @@ const mockRequests = [
 export default function DashboardPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const [requests, setRequests] = useState(mockRequests)
+  const [requests, setRequests] = useState<any[]>([])
+  const [userRequests, setUserRequests] = useState<any[]>([])
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [requestToDelete, setRequestToDelete] = useState<string | null>(null)
 
+  useEffect(() => {
+    const userEmail = sessionStorage.getItem("userEmail")
+    if (userEmail) {
+      supabase
+        .from("request")
+        .select("*")
+        .eq("owner_email", userEmail)
+        .then(({ data, error }) => {
+          if (!error) setRequests(data || [])
+        })
+    }
+  }, [])
+
   // Vérifier l'authentification
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem("isAuthenticated")
+    const isAuthenticated = sessionStorage.getItem("isAuthenticated")
     if (!isAuthenticated) {
       toast({
         title: "Accès non autorisé",
@@ -163,7 +178,7 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm text-foreground/60 mb-1">En cours</p>
                 <p className="text-2xl font-bold text-foreground">
-                  {requests.filter((r) => r.status === "in-progress").length}
+                  {requests.filter((r) => r.status === "in-progress" || r.status === "pending").length}
                 </p>
               </div>
               <Clock className="h-8 w-8 text-warning" />
@@ -209,7 +224,7 @@ export default function DashboardPage() {
                       {getStatusIcon(request.status)}
                       <div>
                         <p className="font-medium text-foreground">
-                          Demande du {new Date(request.date).toLocaleDateString("fr-FR")}
+                          Demande du {new Date(request.created_at).toLocaleDateString("fr-FR")}
                         </p>
                         <p className="text-sm text-foreground/60">
                           Statut: {getStatusText(request.status)}

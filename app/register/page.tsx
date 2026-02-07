@@ -6,6 +6,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft, Mail, Lock, User, Eye, EyeOff, Phone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import bcrypt from "bcryptjs"
+import { supabase } from "@/lib/supabase"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -19,6 +21,7 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     acceptTerms: false,
+    isAdmin: false
   })
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -57,19 +60,31 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      // TODO: Remplacer par un appel API réel
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
+      // Hash du mot de passe
+      const hashedPassword = bcrypt.hashSync(formData.password, 10);
+      const { error } = await supabase.from("users").insert([
+        {
+          first_name: formData.firstName,
+          last_name: formData.lastName,
+          email: formData.email,
+          phone: formData.phone,
+          whatsapp_preferred: formData.whatsappPreferred,
+          password: hashedPassword,
+          is_admin: formData.isAdmin
+        }
+      ]);
+      if (error) {
+        throw error;
+      }
       toast({
         title: "Compte créé avec succès !",
         description: "Votre compte a été créé. Vous allez être redirigé vers la page de connexion.",
         variant: "default",
-      })
-
-      // Redirection vers la page de connexion
+      });
       setTimeout(() => {
-        router.push("/login")
-      }, 1500)
+        router.push("/login");
+      }, 1500);
+      
     } catch (error) {
       toast({
         title: "Erreur lors de l'inscription",
